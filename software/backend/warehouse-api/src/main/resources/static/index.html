@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Warehouse IoT Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- QRCode.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- jsQR CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">&#9878;</span>
+                    <span class="logo-text">Warehouse</span>
+                </div>
+                <button class="sidebar-toggle" id="sidebar-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">&#9632;</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="inventory">
+                    <span class="nav-icon">&#128230;</span>
+                    <span class="nav-text">Ton Kho</span>
+                </a>
+                <a href="#" class="nav-item" data-page="logs">
+                    <span class="nav-icon">&#128196;</span>
+                    <span class="nav-text">Nhat Ky</span>
+                </a>
+                <a href="#" class="nav-item" data-page="camera">
+                    <span class="nav-icon">&#128249;</span>
+                    <span class="nav-text">Camera</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <span class="nav-icon">&#9881;</span>
+                    <span class="nav-text">Cai Dat</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="connection-indicator">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span class="status-text" id="connection-status">Disconnected</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" id="mobile-menu-btn">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <span class="last-update" id="last-update">Cap nhat: --:--:--</span>
+                    <label class="auto-refresh-toggle">
+                        <input type="checkbox" id="auto-refresh-checkbox" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Auto</span>
+                    </label>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                
+                <!-- ==================== DASHBOARD PAGE ==================== -->
+                <section class="page active" id="page-dashboard">
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card stat-card-1">
+                            <div class="stat-icon">&#128230;</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-total-products">0</span>
+                                <span class="stat-label">San Pham</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-2">
+                            <div class="stat-icon">&#128202;</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-total-quantity">0</span>
+                                <span class="stat-label">Tong So Luong</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-3">
+                            <div class="stat-icon">&#9888;</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-out-of-stock">0</span>
+                                <span class="stat-label">Het Hang</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-4">
+                            <div class="stat-icon">&#128337;</div>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-today-transactions">0</span>
+                                <span class="stat-label">Giao Dich Hom Nay</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts & Camera Row -->
+                    <div class="dashboard-grid">
+                        <!-- Chart Section -->
+                        <div class="glass-card chart-card">
+                            <div class="card-header">
+                                <h2>Thong Ke Nhap/Xuat (7 Ngay)</h2>
+                                <div class="chart-legend">
+                                    <span class="legend-item legend-nhap"><span class="legend-dot"></span> Nhap</span>
+                                    <span class="legend-item legend-xuat"><span class="legend-dot"></span> Xuat</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="transactions-chart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Mini Camera Preview -->
+                        <div class="glass-card camera-preview-card">
+                            <div class="card-header">
+                                <h2>Camera Live</h2>
+                                <button class="btn btn-ghost btn-sm" data-page="camera">Xem chi tiet</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="camera-mini-container">
+                                    <img id="camera-stream-mini" src="" alt="Camera Stream" class="camera-stream-mini">
+                                    <div class="camera-placeholder-mini" id="camera-placeholder-mini">
+                                        <span class="placeholder-icon">&#128247;</span>
+                                        <p>Chua ket noi</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="glass-card recent-activity-card">
+                        <div class="card-header">
+                            <h2>Hoat Dong Gan Day</h2>
+                            <button class="btn btn-ghost btn-sm" data-page="logs">Xem tat ca</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="activity-list" id="recent-activity-list">
+                                <div class="activity-empty">Dang tai...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== INVENTORY PAGE ==================== -->
+                <section class="page" id="page-inventory">
+                    <div class="glass-card full-height-card">
+                        <div class="card-header">
+                            <h2>Quan Ly Ton Kho</h2>
+                            <div class="header-actions">
+                                <div class="search-box">
+                                    <input type="text" id="inventory-search" placeholder="Tim kiem san pham...">
+                                    <span class="search-icon">&#128269;</span>
+                                </div>
+                                <button class="btn btn-primary btn-sm" id="refresh-inventory-btn">
+                                    <span>&#8635;</span> Lam moi
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table" id="inventory-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Ma QR</th>
+                                            <th>Ten San Pham</th>
+                                            <th>So Luong</th>
+                                            <th>Trang Thai</th>
+                                            <th>Cap Nhat</th>
+                                            <th>QR Code</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inventory-tbody">
+                                        <tr>
+                                            <td colspan="6" class="loading-cell">
+                                                <div class="loading-spinner"></div>
+                                                Dang tai du lieu...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== LOGS PAGE ==================== -->
+                <section class="page" id="page-logs">
+                    <div class="glass-card full-height-card">
+                        <div class="card-header">
+                            <h2>Nhat Ky Giao Dich</h2>
+                            <div class="header-actions">
+                                <div class="search-box">
+                                    <input type="text" id="logs-search" placeholder="Tim kiem...">
+                                    <span class="search-icon">&#128269;</span>
+                                </div>
+                                <select class="filter-select" id="logs-filter-action">
+                                    <option value="">Tat ca</option>
+                                    <option value="NHAP">Nhap</option>
+                                    <option value="XUAT">Xuat</option>
+                                </select>
+                                <select class="filter-select" id="logs-filter-status">
+                                    <option value="">Tat ca</option>
+                                    <option value="SUCCESS">Thanh cong</option>
+                                    <option value="FAILED">That bai</option>
+                                </select>
+                                <button class="btn btn-primary btn-sm" id="refresh-logs-btn">
+                                    <span>&#8635;</span> Lam moi
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table" id="logs-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Thoi Gian</th>
+                                            <th>Ma QR</th>
+                                            <th>Hanh Dong</th>
+                                            <th>Trang Thai</th>
+                                            <th>Chi Tiet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="logs-tbody">
+                                        <tr>
+                                            <td colspan="5" class="loading-cell">
+                                                <div class="loading-spinner"></div>
+                                                Dang tai du lieu...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== CAMERA PAGE ==================== -->
+                <section class="page" id="page-camera">
+                    <div class="camera-page-grid">
+                        <div class="glass-card camera-main-card">
+                            <div class="card-header">
+                                <h2>Camera Truc Tiep</h2>
+                                <div style="flex: 1; text-align: center;">
+                                    <span style="font-size: 14px; opacity: 0.8;">Che do:</span>
+                                    <span class="badge" id="camera-current-mode-span">CHUA KET NOI</span>
+                                </div>
+                                <div class="camera-controls">
+                                    <button class="btn btn-sm badge-nhap" style="border:none; color:#fff;" id="manual-nhap-btn" title="Chuyển sang chế độ NHẬP">NHẬP</button>
+                                    <button class="btn btn-sm badge-xuat" style="border:none; color:#fff;" id="manual-xuat-btn" title="Chuyển sang chế độ XUẤT">XUẤT</button>
+                                    <button class="btn btn-success btn-sm" id="connect-camera-btn">
+                                        <span>&#9654;</span> Ket noi
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" id="disconnect-camera-btn" style="display: none;">
+                                        <span>&#9632;</span> Ngat
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="camera-container">
+                                    <img id="camera-stream" crossorigin="anonymous" src="" alt="ESP32 Camera Stream" class="camera-stream">
+                                    <canvas id="qr-canvas" style="display: none;"></canvas>
+                                    <div class="camera-placeholder" id="camera-placeholder">
+                                        <div class="placeholder-content">
+                                            <span class="placeholder-icon pulse">&#128247;</span>
+                                            <p>Dang cho ket noi ESP32 Camera...</p>
+                                            <p class="placeholder-hint">Cau hinh IP camera o panel ben phai</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card camera-settings-card">
+                            <div class="card-header">
+                                <h2>Cau Hinh Camera</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="esp32-ip">ESP32 IP Address</label>
+                                    <input type="text" id="esp32-ip" placeholder="192.168.1.100" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="esp32-port">Port</label>
+                                    <input type="text" id="esp32-port" value="81" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="stream-endpoint">Stream Endpoint</label>
+                                    <input type="text" id="stream-endpoint" value="/stream" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Stream URL</label>
+                                    <div class="stream-url-preview" id="stream-url-preview">
+                                        http://[IP]:[PORT]/stream
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary btn-full" id="save-camera-settings">
+                                    Luu Cau Hinh
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Danh sách QR vừa quét -->
+                        <div class="glass-card scanned-history-card">
+                            <div class="card-header">
+                                <h2>San Pham Vua Quet</h2>
+                                <span class="badge badge-success" id="qr-scan-status">San sang</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="activity-list" id="scanned-qr-list">
+                                    <div class="activity-empty">Chua co ma QR nao duoc nhan dien</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- ==================== SETTINGS PAGE ==================== -->
+                <section class="page" id="page-settings">
+                    <div class="settings-grid">
+                        <div class="glass-card">
+                            <div class="card-header">
+                                <h2>Cai Dat He Thong</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="settings-section">
+                                    <h3>API Configuration</h3>
+                                    <div class="form-group">
+                                        <label for="api-base-url">API Base URL</label>
+                                        <input type="text" id="api-base-url" value="http://localhost:8080/api" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="refresh-interval">Auto Refresh Interval (ms)</label>
+                                        <input type="number" id="refresh-interval" value="3000" min="1000" max="60000" class="form-input">
+                                    </div>
+                                </div>
+                                <div class="settings-section">
+                                    <h3>Thong Tin He Thong</h3>
+                                    <div class="info-list">
+                                        <div class="info-item">
+                                            <span class="info-label">Version:</span>
+                                            <span class="info-value">1.0.0</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="info-label">Backend:</span>
+                                            <span class="info-value">Spring Boot 3.2</span>
+                                        </div>
+                                        <div class="info-item">
+                                            <span class="info-label">Database:</span>
+                                            <span class="info-value">PostgreSQL</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" id="save-settings-btn">Luu Cai Dat</button>
+                                <button class="btn btn-ghost" id="test-connection-btn">Test Ket Noi API</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>
