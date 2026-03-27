@@ -37,8 +37,8 @@ bool initCameraStream() {
     cfg.ledc_timer   = LEDC_TIMER_0;
     cfg.ledc_channel = LEDC_CHANNEL_0;
     cfg.pixel_format = PIXFORMAT_JPEG;
-    cfg.frame_size   = FRAMESIZE_VGA;
-    cfg.jpeg_quality = 12;
+    cfg.frame_size   = FRAMESIZE_HVGA;   // 480x320 (nhỏ hơn VGA, nhẹ hơn)
+    cfg.jpeg_quality = 20;               // Chất lượng thấp hơn = file nhỏ hơn = nhanh hơn
     cfg.fb_count     = 2;
     cfg.fb_location  = CAMERA_FB_IN_PSRAM;
     cfg.grab_mode    = CAMERA_GRAB_LATEST;
@@ -94,7 +94,7 @@ void streamTask(void* param) {
                 client.println();
                 esp_camera_fb_return(fb);
 
-                delay(33);  // ~30 FPS
+                delay(20);  // ~50 FPS (mượt hơn)
             }
             client.stop();
             Serial.println("[Stream] Client ngat");

@@ -258,7 +258,8 @@ mvn spring-boot:run    # Port 8080
 
 ## 6. GHI CHÚ KỸ THUẬT
 
-- **Camera gắn ngược**: Đã xử lý bằng CSS rotate + Canvas rotate trong frontend
+- **Camera gắn ngược**: Đã xử lý bằng CSS rotate + Canvas rotate trong frontend (Camera chính và Camera Mini trên Dashboard).
+- **Tối ưu Camera Stream**: Tăng tốc độ khung hình từ ~30 FPS lên ~50 FPS bằng cách thay đổi độ trễ (`delay(20)`), chuyển frame-size xuống `HVGA`, và giảm `jpeg_quality = 20` để luồng mượt mà, phản hồi siêu nhạy.
 - **PIR noise reduction**: Warm-up guard 30s (Cold Boot), filter 100ms và INPUT_PULLDOWN để loại bỏ tín hiệu giả. Bỏ qua warm-up khi được đánh thức từ Deep Sleep.
 - **Camera auto-reconnect**: Health check watchdog ping ESP32 mỗi 10s. Khi ESP32 ngủ, tự động retry kết nối mỗi 5s cho đến khi thành công.
 - **LED**: Chỉ dùng LED xanh, nháy khi countdown < 10s. Không LED khi đổi chế độ

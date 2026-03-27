@@ -10,8 +10,8 @@
 #include <Arduino.h>
 
 // ── WiFi & API Server ──────────────────────────────────
-#define WIFI_SSID       "SH FLOWX T2"
-#define WIFI_PASSWORD   "123456789"
+#define WIFI_SSID       "samsung"
+#define WIFI_PASSWORD   "11111111"
 #define WIFI_TIMEOUT_MS 15000
 #define STREAM_PORT 81
 #define API_PORT    82

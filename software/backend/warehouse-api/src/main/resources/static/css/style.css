@@ -598,6 +598,7 @@ body::after {
     height: 100%;
     object-fit: cover;
     display: none;
+    transform: rotate(180deg); /* Camera cố định bị ngược */
 }
 
 .camera-stream-mini.active {

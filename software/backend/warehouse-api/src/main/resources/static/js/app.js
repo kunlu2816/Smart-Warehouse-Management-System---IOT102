@@ -242,6 +242,16 @@ function setupEventListeners() {
     // Camera stream events
     elements.cameraStream?.addEventListener('load', handleCameraLoad);
     elements.cameraStream?.addEventListener('error', handleCameraError);
+    
+    // Mini camera stream events
+    elements.cameraStreamMini?.addEventListener('load', () => {
+        if (elements.cameraStreamMini) elements.cameraStreamMini.classList.add('active');
+        if (elements.cameraPlaceholderMini) elements.cameraPlaceholderMini.classList.add('hidden');
+    });
+    elements.cameraStreamMini?.addEventListener('error', () => {
+        if (elements.cameraStreamMini) elements.cameraStreamMini.classList.remove('active');
+        if (elements.cameraPlaceholderMini) elements.cameraPlaceholderMini.classList.remove('hidden');
+    });
 
     // Camera settings inputs - update preview
     ['esp32-ip', 'esp32-port', 'stream-endpoint'].forEach(id => {
@@ -780,7 +790,9 @@ function disconnectCamera() {
         elements.cameraStreamMini.src = '';
         elements.cameraStreamMini.classList.remove('active');
     }
-    elements.cameraPlaceholderMini?.classList.remove('hidden');
+    if (elements.cameraPlaceholderMini) {
+        elements.cameraPlaceholderMini.classList.remove('hidden');
+    }
 
     stopQRScanner();
     if (state.modeFetchIntervalRef) {
@@ -831,25 +843,32 @@ function handleCameraLoad() {
  */
 function handleCameraError() {
     elements.cameraStream?.classList.remove('active');
+    if (elements.cameraStreamMini) {
+        elements.cameraStreamMini.classList.remove('active');
+    }
     state.cameraConnected = false;
     stopQRScanner();
 
     // Neu nguoi dung chu dong ngat -> reset UI binh thuong
     if (state.isManualDisconnect) {
         elements.cameraPlaceholder?.classList.remove('hidden');
+        if (elements.cameraPlaceholderMini) {
+            elements.cameraPlaceholderMini.classList.remove('hidden');
+        }
         elements.connectCameraBtn.style.display = 'inline-flex';
         elements.disconnectCameraBtn.style.display = 'none';
-        if (elements.cameraStreamMini) {
-            elements.cameraStreamMini.classList.remove('active');
-        }
-        elements.cameraPlaceholderMini?.classList.remove('hidden');
+        
         showToast('Khong the ket noi camera', 'error');
         return;
     }
 
     // ESP32 di ngu -> giu nut "Ngat" va bat dau tu dong thu lai
+    elements.cameraPlaceholder?.classList.remove('hidden');
+    if (elements.cameraPlaceholderMini) {
+        elements.cameraPlaceholderMini.classList.remove('hidden');
+    }
+    showToast('Dang thu ket noi lai camera...', 'warning');
     if (elements.cameraPlaceholder) {
-        elements.cameraPlaceholder.classList.remove('hidden');
         const hint = elements.cameraPlaceholder.querySelector('.placeholder-hint');
         if (hint) hint.textContent = 'Mat ket noi - Dang tu dong thu lai...';
     }
@@ -1093,44 +1112,62 @@ async function handleScannedQR(qrData, imageData) {
         return; // Do not scan unless mode is set
     }
 
-    // 2. Minimum global interval (1500ms global cooldown after any scan)
+    // ═══════════════════════════════════════════════════
+    // LỚP 1: Global Cooldown — Sau mỗi scan thành công,
+    //         TOÀN BỘ hệ thống scan bị khóa 2 giây
+    // ═══════════════════════════════════════════════════
     if (now < scanState.globalCooldownUntil) {
         return;
     }
 
-    // 3. Same-QR cooldown specifically (4s)
+    // ═══════════════════════════════════════════════════
+    // LỚP 2: Same-QR Cooldown — Cùng một mã QR không được
+    //         quét lại trong vòng 4 giây
+    // ═══════════════════════════════════════════════════
     if (state.lastScannedQR === qrData && (now - state.lastScanTime) < 4000) {
         return;
     }
 
-    // 4. In-flight lock
+    // ═══════════════════════════════════════════════════
+    // LỚP 3: In-flight Lock — Chỉ cho phép 1 request
+    //         gửi đến server tại một thời điểm
+    // ═══════════════════════════════════════════════════
     if (scanState.isRequestInFlight) {
-        return;
+        return; // Đang có request chờ phản hồi → bỏ qua
     }
 
-    // 5. Frame-change gate (frozen frame check)
+    // ═══════════════════════════════════════════════════
+    // LỚP 4: Frame Fingerprint — Kiểm tra frame hiện tại
+    //         có thay đổi so với frame trước không
+    //         (phát hiện camera đóng băng/giữ cùng 1 hình)
+    // ═══════════════════════════════════════════════════
     const currentFingerprint = Math.round(calculateFrameFingerprint(imageData));
     if (scanState.lastFrameFingerprint !== null) {
         const diff = Math.abs(currentFingerprint - scanState.lastFrameFingerprint);
-        // If image is virtually identical (diff very small), it's a frozen frame
         if (diff < 500) {
-            return;
+            return; // Frame gần giống hệt → có thể bị đóng băng → bỏ qua
         }
     }
 
-    // Set locks
-    scanState.isRequestInFlight = true;
-    state.lastScannedQR = qrData;
+    // ═══════════════════════════════════════════════════
+    // KHÓA VÀ GỬI REQUEST
+    // ═══════════════════════════════════════════════════
+    scanState.isRequestInFlight = true;  // Khóa lớp 3
+    state.lastScannedQR = qrData;        // Ghi nhớ cho lớp 2
     state.lastScanTime = now;
     scanState.lastFrameFingerprint = currentFingerprint;
 
+    // ═══════════════════════════════════════════════════
+    // LỚP 5 (chuẩn bị): Tạo UUID duy nhất cho mỗi lần scan
+    //         → gửi kèm request → Backend kiểm tra trùng lặp
+    // ═══════════════════════════════════════════════════
     const scanEventId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
 
     try {
         const payload = {
             qr: qrData,
             mode: state.esp32Mode,
-            scanEventId: scanEventId
+            scanEventId: scanEventId // ← UUID gửi kèm
         };
 
         const res = await fetch(`${CONFIG.API_BASE_URL}/scan`, {
