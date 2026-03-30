@@ -10,8 +10,8 @@
 #include <Arduino.h>
 
 // ── WiFi & API Server ──────────────────────────────────
-#define WIFI_SSID       "samsung"
-#define WIFI_PASSWORD   "11111111"
+#define WIFI_SSID       "DAITHANH1_A710R"
+#define WIFI_PASSWORD   "999999999"
 #define WIFI_TIMEOUT_MS 15000
 #define STREAM_PORT 81
 #define API_PORT    82
